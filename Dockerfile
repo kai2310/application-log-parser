@@ -14,5 +14,6 @@ WORKDIR /app
 COPY --from=build /app/target/application-log-parser-1.0.0.jar /app/application-log-parser.jar
 
 EXPOSE 8080
+EXPOSE 9090
 
 CMD ["java", "-jar", "/app/application-log-parser.jar"]
