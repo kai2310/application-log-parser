@@ -35,8 +35,12 @@ public final class ReportGenerationService {
             throw new IllegalArgumentException("filePaths must contain at least one log file path.");
         }
 
+        return generateReport(filePaths, List.of());
+    }
+
+    private GenerateReportResponse generateReport(List<String> filePaths, List<String> preIgnoredFiles) throws IOException {
         List<Path> validPaths = new ArrayList<>();
-        List<String> ignoredFiles = new ArrayList<>();
+        List<String> ignoredFiles = new ArrayList<>(preIgnoredFiles);
         for (String filePath : filePaths) {
             if (filePath == null || filePath.isBlank()) {
                 ignoredFiles.add(String.valueOf(filePath));
@@ -55,6 +59,10 @@ public final class ReportGenerationService {
             throw new IllegalArgumentException("None of the provided filePaths points to an existing file.");
         }
 
+        return generateReportFromValidPaths(validPaths, ignoredFiles);
+    }
+
+    private GenerateReportResponse generateReportFromValidPaths(List<Path> validPaths, List<String> ignoredFiles) throws IOException {
         LogAnalysisService.AnalysisBundle analysisBundle = logAnalysisService.analyze(validPaths);
 
         List<IssueRecord> allIssues = new ArrayList<>(analysisBundle.criticalIssues());
@@ -85,21 +93,31 @@ public final class ReportGenerationService {
             throw new IllegalArgumentException("folderPath must point to an existing directory.");
         }
 
-        List<String> discoveredLogFilePaths;
+        List<String> discoveredLogFilePaths = new ArrayList<>();
+        List<String> ignoredFilePaths = new ArrayList<>();
         try (Stream<Path> paths = Files.list(resolvedFolderPath)) {
-            discoveredLogFilePaths = paths
-                    .filter(Files::isRegularFile)
-                    .filter(this::isLogFile)
+            List<Path> sortedPaths = paths
+                    .map(path -> path.toAbsolutePath().normalize())
                     .sorted()
-                    .map(path -> path.toAbsolutePath().normalize().toString())
                     .toList();
+
+            for (Path path : sortedPaths) {
+                if (!Files.isRegularFile(path)) {
+                    continue;
+                }
+                if (!isLogFile(path)) {
+                    ignoredFilePaths.add(path.toString());
+                    continue;
+                }
+                discoveredLogFilePaths.add(path.toString());
+            }
         }
 
         if (discoveredLogFilePaths.isEmpty()) {
             throw new IllegalArgumentException("No .log files were found in the provided folderPath.");
         }
 
-        return generateReport(discoveredLogFilePaths);
+        return generateReport(discoveredLogFilePaths, ignoredFilePaths);
     }
 
     private boolean isLogFile(Path path) {

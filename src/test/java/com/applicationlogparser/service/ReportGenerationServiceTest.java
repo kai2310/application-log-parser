@@ -194,7 +194,7 @@ class ReportGenerationServiceTest {
     }
 
     @Test
-    void generateReportFromFolderUsesOnlyLogFiles() throws Exception {
+    void generateReportFromFolderUsesOnlyLogFilesAndTracksIgnoredFiles() throws Exception {
         LogParserService logParserService = mock(LogParserService.class);
         IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
         ReportGenerationService service = new ReportGenerationService(
@@ -202,9 +202,13 @@ class ReportGenerationServiceTest {
         );
 
         Path folder = Files.createDirectory(tempDir.resolve("logs-folder"));
-        Path firstLog = Files.createFile(folder.resolve("application.log"));
-        Path secondLog = Files.createFile(folder.resolve("application-2.LOG"));
-        Files.writeString(folder.resolve("skip.txt"), "ignore me");
+        Path firstLog = Files.createFile(folder.resolve("a.log"));
+        Path secondLog = Files.createFile(folder.resolve("b.LOG"));
+        Path ignoredTextFile = folder.resolve("skip.txt");
+        Path ignoredJsonFile = folder.resolve("skip.json");
+        Files.writeString(ignoredTextFile, "ignore me");
+        Files.writeString(ignoredJsonFile, "{\"skip\": true}");
+        Files.createDirectory(folder.resolve("nested"));
 
         List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-info"));
         when(logParserService.parseFiles(anyList())).thenReturn(parsedEntries);
@@ -220,7 +224,14 @@ class ReportGenerationServiceTest {
         assertEquals(firstLog.toAbsolutePath().normalize(), passedPaths.get(0));
         assertEquals(secondLog.toAbsolutePath().normalize(), passedPaths.get(1));
 
-        assertTrue(response.ignoredFiles().isEmpty());
+        assertEquals(
+                List.of(
+                        ignoredJsonFile.toAbsolutePath().normalize().toString(),
+                        ignoredTextFile.toAbsolutePath().normalize().toString()
+                ),
+                response.ignoredFiles()
+        );
+        assertEquals("Report generated successfully", response.message());
         assertTrue(Files.exists(Paths.get(response.reportPath())));
     }
 
