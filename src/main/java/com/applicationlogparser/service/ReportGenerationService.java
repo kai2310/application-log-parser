@@ -14,7 +14,9 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.stereotype.Service;
 
+@Service
 public final class ReportGenerationService {
 
     private static final DateTimeFormatter FILE_NAME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
@@ -22,8 +24,8 @@ public final class ReportGenerationService {
 
     private final LogAnalysisService logAnalysisService;
 
-    public ReportGenerationService(LogParserService logParserService, IssueAnalyzerService issueAnalyzerService) {
-        this.logAnalysisService = new LogAnalysisService(logParserService, issueAnalyzerService);
+    public ReportGenerationService(LogAnalysisService logAnalysisService) {
+        this.logAnalysisService = logAnalysisService;
     }
 
     public GenerateReportResponse generateReport(List<String> filePaths) throws IOException {

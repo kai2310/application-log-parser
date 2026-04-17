@@ -16,7 +16,9 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import org.springframework.stereotype.Service;
 
+@Service
 public class IssueAnalyzerService {
 
     private static final Pattern CAUSE_PATTERN = Pattern.compile("(?i)(?:caused by|root cause|because|due to)[:\\s]+(.+)");
