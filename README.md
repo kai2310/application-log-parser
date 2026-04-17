@@ -129,6 +129,21 @@ curl -X POST "http://localhost:8080/api/reports/folder" \
   }'
 ```
 
+Example response (same response schema as `POST /api/reports`):
+
+```json
+{
+  "reportPath": "/workspace/reports/application-logs-report-20260416-143212.txt",
+  "totalEntriesProcessed": 3589,
+  "criticalIssueGroups": 2,
+  "errorIssueGroups": 4,
+  "ignoredFiles": [
+    "/workspace/sample-logs/notes.txt"
+  ],
+  "message": "Report generated successfully"
+}
+```
+
 Request body for folder endpoint:
 
 ```json
@@ -140,6 +155,8 @@ Request body for folder endpoint:
 Behavior:
 
 - Reads only regular files ending with `.log` (case-insensitive) from the provided folder.
+- Uses the same response payload shape as `POST /api/reports`.
+- Includes non-`.log` regular files from that folder in `ignoredFiles`.
 - Does not recurse into subfolders.
 - Returns `400` if folder path is blank, does not exist, or contains no `.log` files.
 
