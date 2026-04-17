@@ -78,6 +78,7 @@ curl http://localhost:9090/actuator/info
 Endpoint:
 
 - `POST /api/reports`
+- `POST /api/reports/folder`
 
 Request body:
 
@@ -117,6 +118,30 @@ Example response:
 ```
 
 You can call this endpoint repeatedly while the app is running to generate multiple reports at different times.
+
+Generate report by scanning one folder for `.log` files:
+
+```bash
+curl -X POST "http://localhost:8080/api/reports/folder" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "folderPath": "/workspace/sample-logs"
+  }'
+```
+
+Request body for folder endpoint:
+
+```json
+{
+  "folderPath": "/absolute/path/to/folder/with/log-files"
+}
+```
+
+Behavior:
+
+- Reads only regular files ending with `.log` (case-insensitive) from the provided folder.
+- Does not recurse into subfolders.
+- Returns `400` if folder path is blank, does not exist, or contains no `.log` files.
 
 ## Report format
 
