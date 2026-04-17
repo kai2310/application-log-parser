@@ -14,6 +14,8 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.stream.Stream;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -71,6 +73,38 @@ public final class ReportGenerationService {
                 ignoredFiles,
                 "Report generated successfully"
         );
+    }
+
+    public GenerateReportResponse generateReportFromFolder(String folderPath) throws IOException {
+        if (folderPath == null || folderPath.isBlank()) {
+            throw new IllegalArgumentException("folderPath must be provided.");
+        }
+
+        Path resolvedFolderPath = Paths.get(folderPath).toAbsolutePath().normalize();
+        if (!Files.isDirectory(resolvedFolderPath)) {
+            throw new IllegalArgumentException("folderPath must point to an existing directory.");
+        }
+
+        List<String> discoveredLogFilePaths;
+        try (Stream<Path> paths = Files.list(resolvedFolderPath)) {
+            discoveredLogFilePaths = paths
+                    .filter(Files::isRegularFile)
+                    .filter(this::isLogFile)
+                    .sorted()
+                    .map(path -> path.toAbsolutePath().normalize().toString())
+                    .toList();
+        }
+
+        if (discoveredLogFilePaths.isEmpty()) {
+            throw new IllegalArgumentException("No .log files were found in the provided folderPath.");
+        }
+
+        return generateReport(discoveredLogFilePaths);
+    }
+
+    private boolean isLogFile(Path path) {
+        String fileName = path.getFileName().toString();
+        return fileName.toLowerCase(Locale.ROOT).endsWith(".log");
     }
 
     private Path writeReport(List<IssueRecord> issues, List<String> inputFiles) throws IOException {

@@ -158,6 +158,72 @@ class ReportGenerationServiceTest {
         assertTrue(reportText.contains("No critical issues or errors were detected in the provided logs."));
     }
 
+    @Test
+    void generateReportFromFolderRejectsInvalidFolderPath() {
+        ReportGenerationService service = new ReportGenerationService(
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService())
+        );
+
+        IllegalArgumentException blankPathException = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.generateReportFromFolder(" ")
+        );
+        assertEquals("folderPath must be provided.", blankPathException.getMessage());
+
+        IllegalArgumentException missingFolderException = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.generateReportFromFolder(tempDir.resolve("missing-folder").toString())
+        );
+        assertEquals("folderPath must point to an existing directory.", missingFolderException.getMessage());
+    }
+
+    @Test
+    void generateReportFromFolderRejectsFolderWithoutLogFiles() throws Exception {
+        ReportGenerationService service = new ReportGenerationService(
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService())
+        );
+        Path folder = Files.createDirectory(tempDir.resolve("input-folder"));
+        Files.writeString(folder.resolve("notes.txt"), "not a log");
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.generateReportFromFolder(folder.toString())
+        );
+
+        assertEquals("No .log files were found in the provided folderPath.", exception.getMessage());
+    }
+
+    @Test
+    void generateReportFromFolderUsesOnlyLogFiles() throws Exception {
+        LogParserService logParserService = mock(LogParserService.class);
+        IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
+        ReportGenerationService service = new ReportGenerationService(
+                new LogAnalysisService(logParserService, issueAnalyzerService)
+        );
+
+        Path folder = Files.createDirectory(tempDir.resolve("logs-folder"));
+        Path firstLog = Files.createFile(folder.resolve("application.log"));
+        Path secondLog = Files.createFile(folder.resolve("application-2.LOG"));
+        Files.writeString(folder.resolve("skip.txt"), "ignore me");
+
+        List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-info"));
+        when(logParserService.parseFiles(anyList())).thenReturn(parsedEntries);
+        when(issueAnalyzerService.analyze(parsedEntries))
+                .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of()));
+
+        GenerateReportResponse response = service.generateReportFromFolder(folder.toString());
+
+        ArgumentCaptor<List<Path>> validPathCaptor = ArgumentCaptor.forClass(List.class);
+        verify(logParserService, times(1)).parseFiles(validPathCaptor.capture());
+        List<Path> passedPaths = validPathCaptor.getValue();
+        assertEquals(2, passedPaths.size());
+        assertEquals(firstLog.toAbsolutePath().normalize(), passedPaths.get(0));
+        assertEquals(secondLog.toAbsolutePath().normalize(), passedPaths.get(1));
+
+        assertTrue(response.ignoredFiles().isEmpty());
+        assertTrue(Files.exists(Paths.get(response.reportPath())));
+    }
+
     private static Stream<Arguments> invalidFilePathInputs() {
         return Stream.of(
                 Arguments.of(null, "filePaths must contain at least one log file path."),

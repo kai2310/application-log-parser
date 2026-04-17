@@ -50,16 +50,27 @@ This script runs:
 mvn spring-boot:run
 ```
 
-Default port is `8080`. Override with:
+Application API port is `8080`. Override with:
 
 ```bash
-PORT=9090 ./start.sh
+PORT=9091 ./start.sh
 ```
+
+The Spring Boot Actuator management port is fixed at `9090` and exposes:
+
+- `/actuator/health`
+- `/actuator/info`
 
 Health check:
 
 ```bash
-curl http://localhost:8080/api/health
+curl http://localhost:9090/actuator/health
+```
+
+Info endpoint:
+
+```bash
+curl http://localhost:9090/actuator/info
 ```
 
 ## Generate reports using API
@@ -67,6 +78,7 @@ curl http://localhost:8080/api/health
 Endpoint:
 
 - `POST /api/reports`
+- `POST /api/reports/folder`
 
 Request body:
 
@@ -106,6 +118,30 @@ Example response:
 ```
 
 You can call this endpoint repeatedly while the app is running to generate multiple reports at different times.
+
+Generate report by scanning one folder for `.log` files:
+
+```bash
+curl -X POST "http://localhost:8080/api/reports/folder" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "folderPath": "/workspace/sample-logs"
+  }'
+```
+
+Request body for folder endpoint:
+
+```json
+{
+  "folderPath": "/absolute/path/to/folder/with/log-files"
+}
+```
+
+Behavior:
+
+- Reads only regular files ending with `.log` (case-insensitive) from the provided folder.
+- Does not recurse into subfolders.
+- Returns `400` if folder path is blank, does not exist, or contains no `.log` files.
 
 ## Report format
 
@@ -162,6 +198,7 @@ With optional environment variables:
 
 ```bash
 HOST_PORT=8080 CONTAINER_PORT=8080 \
+ACTUATOR_HOST_PORT=9090 ACTUATOR_CONTAINER_PORT=9090 \
 LOGS_DIR=/absolute/path/to/your/logs \
 REPORTS_DIR=/absolute/path/to/your/project/reports \
 ./docker-start.sh
@@ -171,7 +208,7 @@ This script runs:
 
 ```bash
 docker build -t application-log-parser:latest .
-docker run --rm -p 8080:8080 \
+docker run --rm -p 8080:8080 -p 9090:9090 \
   -v /absolute/path/to/your/logs:/logs:ro \
   -v /absolute/path/to/your/project/reports:/app/reports \
   application-log-parser:latest

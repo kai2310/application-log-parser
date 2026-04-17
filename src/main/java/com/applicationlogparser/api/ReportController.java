@@ -2,6 +2,7 @@ package com.applicationlogparser.api;
 
 import com.applicationlogparser.dto.GenerateReportRequest;
 import com.applicationlogparser.dto.GenerateReportResponse;
+import com.applicationlogparser.dto.GenerateFolderReportRequest;
 import com.applicationlogparser.service.ReportGenerationService;
 import java.io.IOException;
 import java.util.List;
@@ -25,6 +26,11 @@ public class ReportController {
     @PostMapping("/reports")
     public GenerateReportResponse generateReport(@RequestBody GenerateReportRequest request) throws IOException {
         return reportGenerationService.generateReport(request.getFilePaths());
+    }
+
+    @PostMapping("/reports/folder")
+    public GenerateReportResponse generateReportFromFolder(@RequestBody GenerateFolderReportRequest request) throws IOException {
+        return reportGenerationService.generateReportFromFolder(request.getFolderPath());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
