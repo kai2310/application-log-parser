@@ -107,8 +107,17 @@ class ReportGenerationServiceTest {
                 List.of(),
                 "logger-b"
         );
+        IssueRecord warningIssue = new IssueRecord(
+                IssueType.WARNING,
+                "Connection pool usage is high",
+                "Cause not explicitly available in logs",
+                List.of(),
+                List.of(zonedNow()),
+                List.of("at com.app.pool.ConnectionPool.monitor(ConnectionPool.java:42)"),
+                "logger-c"
+        );
         when(issueAnalyzerService.analyze(parsedEntries))
-                .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(criticalIssue), List.of(errorIssue)));
+                .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(criticalIssue), List.of(errorIssue), List.of(warningIssue)));
 
         GenerateReportResponse response = service.generateReport(List.of(validLogFile.toString(), blankPath, missingPath));
 
@@ -117,6 +126,7 @@ class ReportGenerationServiceTest {
         assertEquals(parsedEntries.size(), response.totalEntriesProcessed());
         assertEquals(1, response.criticalIssueGroups());
         assertEquals(1, response.errorIssueGroups());
+        assertEquals(1, response.warningIssueGroups());
         assertEquals(List.of(blankPath, missingPath), response.ignoredFiles());
         assertEquals("Report generated successfully", response.message());
 
@@ -131,9 +141,11 @@ class ReportGenerationServiceTest {
         String reportText = Files.readString(reportPath, StandardCharsets.UTF_8);
         assertTrue(reportText.contains("1) CRITICAL ISSUES"));
         assertTrue(reportText.contains("2) ERROR ISSUES"));
+        assertTrue(reportText.contains("3) WARNING ISSUES"));
         assertTrue(reportText.contains("memory leak detected"));
         assertTrue(reportText.contains("NullPointerException happened"));
-        assertFalse(reportText.contains("No critical issues or errors were detected"));
+        assertTrue(reportText.contains("Connection pool usage is high"));
+        assertFalse(reportText.contains("No critical issues, errors, or warnings were detected"));
     }
 
     @Test
@@ -148,14 +160,15 @@ class ReportGenerationServiceTest {
         List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-clean"));
         when(logParserService.parseFiles(anyList())).thenReturn(parsedEntries);
         when(issueAnalyzerService.analyze(parsedEntries))
-                .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of()));
+                .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of(), List.of()));
 
         GenerateReportResponse response = service.generateReport(List.of(validLogFile.toString()));
         String reportText = Files.readString(Paths.get(response.reportPath()), StandardCharsets.UTF_8);
 
         assertTrue(reportText.contains("No critical issues detected."));
         assertTrue(reportText.contains("No error issues detected."));
-        assertTrue(reportText.contains("No critical issues or errors were detected in the provided logs."));
+        assertTrue(reportText.contains("No warning issues detected."));
+        assertTrue(reportText.contains("No critical issues, errors, or warnings were detected in the provided logs."));
     }
 
     @Test
@@ -213,7 +226,7 @@ class ReportGenerationServiceTest {
         List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-info"));
         when(logParserService.parseFiles(anyList())).thenReturn(parsedEntries);
         when(issueAnalyzerService.analyze(parsedEntries))
-                .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of()));
+                .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of(), List.of()));
 
         GenerateReportResponse response = service.generateReportFromFolder(folder.toString());
 

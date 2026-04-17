@@ -67,6 +67,7 @@ public final class ReportGenerationService {
 
         List<IssueRecord> allIssues = new ArrayList<>(analysisBundle.criticalIssues());
         allIssues.addAll(analysisBundle.errorIssues());
+        allIssues.addAll(analysisBundle.warningIssues());
 
         Path reportPath = writeReport(
                 allIssues,
@@ -78,6 +79,7 @@ public final class ReportGenerationService {
                 analysisBundle.totalEntries(),
                 analysisBundle.criticalIssueGroups(),
                 analysisBundle.errorIssueGroups(),
+                analysisBundle.warningIssueGroups(),
                 ignoredFiles,
                 "Report generated successfully"
         );
@@ -156,15 +158,20 @@ public final class ReportGenerationService {
         List<IssueRecord> errorIssues = issues.stream()
                 .filter(issue -> issue.issueType() == IssueType.ERROR)
                 .toList();
+        List<IssueRecord> warningIssues = issues.stream()
+                .filter(issue -> issue.issueType() == IssueType.WARNING)
+                .toList();
 
         appendSection(sb, "1) CRITICAL ISSUES", criticalIssues, "No critical issues detected.");
         sb.append(System.lineSeparator());
         appendSection(sb, "2) ERROR ISSUES", errorIssues, "No error issues detected.");
+        sb.append(System.lineSeparator());
+        appendSection(sb, "3) WARNING ISSUES", warningIssues, "No warning issues detected.");
 
-        if (criticalIssues.isEmpty() && errorIssues.isEmpty()) {
+        if (criticalIssues.isEmpty() && errorIssues.isEmpty() && warningIssues.isEmpty()) {
             sb.append(System.lineSeparator());
             sb.append("SUMMARY").append(System.lineSeparator());
-            sb.append("No critical issues or errors were detected in the provided logs.").append(System.lineSeparator());
+            sb.append("No critical issues, errors, or warnings were detected in the provided logs.").append(System.lineSeparator());
         }
 
         return sb.toString();

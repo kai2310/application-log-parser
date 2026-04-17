@@ -25,8 +25,10 @@ public final class LogAnalysisService {
                 entries.size(),
                 analysisResult.criticalIssues().size(),
                 analysisResult.errorIssues().size(),
+                analysisResult.warningIssues().size(),
                 analysisResult.criticalIssues(),
-                analysisResult.errorIssues()
+                analysisResult.errorIssues(),
+                analysisResult.warningIssues()
         );
     }
 
@@ -34,8 +36,10 @@ public final class LogAnalysisService {
             int totalEntries,
             int criticalIssueGroups,
             int errorIssueGroups,
+            int warningIssueGroups,
             List<com.applicationlogparser.model.IssueRecord> criticalIssues,
-            List<com.applicationlogparser.model.IssueRecord> errorIssues
+            List<com.applicationlogparser.model.IssueRecord> errorIssues,
+            List<com.applicationlogparser.model.IssueRecord> warningIssues
     ) {
     }
 }

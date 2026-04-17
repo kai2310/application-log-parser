@@ -37,7 +37,7 @@ public class ReportController {
     public ResponseEntity<GenerateReportResponse> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(new GenerateReportResponse(null, 0, 0, 0, List.of(), ex.getMessage()));
+                .body(new GenerateReportResponse(null, 0, 0, 0, 0, List.of(), ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
@@ -46,6 +46,7 @@ public class ReportController {
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new GenerateReportResponse(
                         null,
+                        0,
                         0,
                         0,
                         0,

@@ -10,11 +10,12 @@ Spring Boot + Java 25 + Docker application that parses multiple log files and ge
 - Detects and reports:
   1. **Critical issues first** (heap/memory leak related issues such as `OutOfMemoryError`, `Java heap space`, `GC overhead limit exceeded`, `Metaspace`, etc.).
   2. **Error issues second** (`ERROR` level entries), grouped by same issue signature.
+  3. **Warning issues third** (`WARN` / `WARNING` level entries), grouped by same issue signature.
 - For each grouped issue, report includes:
   - Cause (best effort from message / "Caused by")
   - All occurrence times
   - Stack trace lines (when available)
-- If no critical/error issues exist, still generates a report with a "nothing found" summary.
+- If no critical/error/warning issues exist, still generates a report with a "nothing found" summary.
 - Saves report locally in:
   - `reports/application-logs-report-<datetime>.txt`
   - Datetime is generated in current system/user timezone.
@@ -112,6 +113,7 @@ Example response:
   "totalEntriesProcessed": 3589,
   "criticalIssueGroups": 2,
   "errorIssueGroups": 4,
+  "warningIssueGroups": 6,
   "ignoredFiles": [],
   "message": "Report generated successfully"
 }
@@ -137,6 +139,7 @@ Example response (same response schema as `POST /api/reports`):
   "totalEntriesProcessed": 3589,
   "criticalIssueGroups": 2,
   "errorIssueGroups": 4,
+  "warningIssueGroups": 6,
   "ignoredFiles": [
     "/workspace/sample-logs/notes.txt"
   ],
@@ -194,13 +197,24 @@ Input Files:
    Stack Trace:
      at com.example.OrderService.process(...)
      at ...
+
+3) WARNING ISSUES
+1. Connection pool usage is high: active 92%
+   Cause: Cause not explicitly available in logs
+   Occurrences: 5
+   Times:
+     - 2026-04-16 11:55:15 -07:00
+     - ...
+   Stack Trace:
+     at com.example.ConnectionPool.monitor(...)
+     at ...
 ```
 
 If nothing is found:
 
 ```text
 SUMMARY
-No critical issues or errors were detected in the provided logs.
+No critical issues, errors, or warnings were detected in the provided logs.
 ```
 
 ## Run with Docker
