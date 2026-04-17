@@ -29,6 +29,7 @@ class IssueAnalyzerServiceTest {
 
         assertEquals(1, result.criticalIssues().size());
         assertEquals(0, result.errorIssues().size());
+        assertEquals(0, result.warningIssues().size());
         assertEquals(IssueType.CRITICAL, result.criticalIssues().get(0).issueType());
     }
 
@@ -40,6 +41,7 @@ class IssueAnalyzerServiceTest {
         IssueAnalyzerService.AnalysisResult result = subject.analyze(List.of(first, second));
 
         assertEquals(1, result.errorIssues().size());
+        assertEquals(0, result.warningIssues().size());
         IssueRecord issue = result.errorIssues().get(0);
         assertEquals(IssueType.ERROR, issue.issueType());
         assertEquals(2, issue.occurrences().size());
@@ -59,6 +61,23 @@ class IssueAnalyzerServiceTest {
 
         assertTrue(result.criticalIssues().isEmpty());
         assertTrue(result.errorIssues().isEmpty());
+        assertTrue(result.warningIssues().isEmpty());
+    }
+
+    @Test
+    void analyze_groupsWarningEntriesWithSameSignature() {
+        ParsedLogEntry first = entry("WARN", "Cache nearing capacity: 80%", List.of("at a.b.CacheMonitor.check(CacheMonitor.java:10)"));
+        ParsedLogEntry second = entry("WARNING", "Cache nearing capacity: 92%", List.of("at a.b.CacheMonitor.check(CacheMonitor.java:10)"));
+
+        IssueAnalyzerService.AnalysisResult result = subject.analyze(List.of(first, second));
+
+        assertEquals(1, result.warningIssues().size());
+        IssueRecord issue = result.warningIssues().get(0);
+        assertEquals(IssueType.WARNING, issue.issueType());
+        assertEquals(2, issue.occurrences().size());
+        assertEquals("app.logger", issue.logger());
+        assertTrue(issue.title().contains("Cache nearing capacity"));
+        assertTrue(issue.stackTraceLines().contains("at a.b.CacheMonitor.check(CacheMonitor.java:10)"));
     }
 
     private static Stream<String> criticalMessages() {

@@ -36,6 +36,7 @@ public class IssueAnalyzerService {
     public AnalysisResult analyze(List<ParsedLogEntry> entries) {
         Map<String, Aggregation> criticalAggregations = new LinkedHashMap<>();
         Map<String, Aggregation> errorAggregations = new LinkedHashMap<>();
+        Map<String, Aggregation> warningAggregations = new LinkedHashMap<>();
 
         for (ParsedLogEntry entry : entries) {
             String loweredMessage = entry.message().toLowerCase(Locale.ROOT);
@@ -48,8 +49,10 @@ public class IssueAnalyzerService {
             Aggregation aggregation;
             if (issueType == IssueType.CRITICAL) {
                 aggregation = criticalAggregations.computeIfAbsent(signature, ignored -> new Aggregation(signature));
-            } else {
+            } else if (issueType == IssueType.ERROR) {
                 aggregation = errorAggregations.computeIfAbsent(signature, ignored -> new Aggregation(signature));
+            } else {
+                aggregation = warningAggregations.computeIfAbsent(signature, ignored -> new Aggregation(signature));
             }
 
             aggregation.times.add(entry.timestamp());
@@ -60,7 +63,8 @@ public class IssueAnalyzerService {
 
         return new AnalysisResult(
             toSortedRecords(criticalAggregations.values(), IssueType.CRITICAL),
-            toSortedRecords(errorAggregations.values(), IssueType.ERROR)
+            toSortedRecords(errorAggregations.values(), IssueType.ERROR),
+            toSortedRecords(warningAggregations.values(), IssueType.WARNING)
         );
     }
 
@@ -101,6 +105,10 @@ public class IssueAnalyzerService {
 
         if ("ERROR".equalsIgnoreCase(level)) {
             return IssueType.ERROR;
+        }
+
+        if ("WARN".equalsIgnoreCase(level) || "WARNING".equalsIgnoreCase(level)) {
+            return IssueType.WARNING;
         }
 
         return null;
@@ -174,7 +182,8 @@ public class IssueAnalyzerService {
 
     public record AnalysisResult(
         List<IssueRecord> criticalIssues,
-        List<IssueRecord> errorIssues
+        List<IssueRecord> errorIssues,
+        List<IssueRecord> warningIssues
     ) {
     }
 

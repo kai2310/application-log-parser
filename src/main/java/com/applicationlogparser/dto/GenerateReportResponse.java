@@ -7,6 +7,7 @@ public record GenerateReportResponse(
         int totalEntriesProcessed,
         int criticalIssueGroups,
         int errorIssueGroups,
+        int warningIssueGroups,
         List<String> ignoredFiles,
         String message
 ) {

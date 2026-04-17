@@ -44,7 +44,7 @@ class LogAnalysisServiceTest {
 
     @ParameterizedTest
     @MethodSource("analysisScenarios")
-    void analyzeShouldReturnExpectedSummaryCounts(int totalEntries, int criticalGroups, int errorGroups) throws IOException {
+    void analyzeShouldReturnExpectedSummaryCounts(int totalEntries, int criticalGroups, int errorGroups, int warningGroups) throws IOException {
         List<Path> inputFiles = List.of(Path.of("/tmp/app-1.log"), Path.of("/tmp/app-2.log"));
         List<ParsedLogEntry> parsedEntries = IntStream.range(0, totalEntries)
                 .mapToObj(this::entryAt)
@@ -55,7 +55,14 @@ class LogAnalysisServiceTest {
         List<IssueRecord> errorIssues = IntStream.range(0, errorGroups)
                 .mapToObj(index -> issueAt(IssueType.ERROR, index))
                 .toList();
-        IssueAnalyzerService.AnalysisResult analysisResult = new IssueAnalyzerService.AnalysisResult(criticalIssues, errorIssues);
+        List<IssueRecord> warningIssues = IntStream.range(0, warningGroups)
+                .mapToObj(index -> issueAt(IssueType.WARNING, index))
+                .toList();
+        IssueAnalyzerService.AnalysisResult analysisResult = new IssueAnalyzerService.AnalysisResult(
+                criticalIssues,
+                errorIssues,
+                warningIssues
+        );
 
         when(logParserService.parseFiles(inputFiles)).thenReturn(parsedEntries);
         when(issueAnalyzerService.analyze(parsedEntries)).thenReturn(analysisResult);
@@ -65,8 +72,10 @@ class LogAnalysisServiceTest {
         assertEquals(totalEntries, bundle.totalEntries());
         assertEquals(criticalGroups, bundle.criticalIssueGroups());
         assertEquals(errorGroups, bundle.errorIssueGroups());
+        assertEquals(warningGroups, bundle.warningIssueGroups());
         assertEquals(criticalIssues, bundle.criticalIssues());
         assertEquals(errorIssues, bundle.errorIssues());
+        assertEquals(warningIssues, bundle.warningIssues());
         verify(logParserService).parseFiles(inputFiles);
         verify(issueAnalyzerService).analyze(parsedEntries);
     }
@@ -83,9 +92,9 @@ class LogAnalysisServiceTest {
 
     private static Stream<Arguments> analysisScenarios() {
         return Stream.of(
-                Arguments.of(0, 0, 0),
-                Arguments.of(2, 1, 0),
-                Arguments.of(5, 2, 3)
+                Arguments.of(0, 0, 0, 0),
+                Arguments.of(2, 1, 0, 1),
+                Arguments.of(5, 2, 3, 4)
         );
     }
 
