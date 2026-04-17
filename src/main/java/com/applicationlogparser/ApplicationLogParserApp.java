@@ -1,29 +1,12 @@
 package com.applicationlogparser;
 
-import com.applicationlogparser.api.ReportApiServer;
-import com.applicationlogparser.service.IssueAnalyzerService;
-import com.applicationlogparser.service.LogParserService;
-import com.applicationlogparser.service.ReportGenerationService;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-public final class ApplicationLogParserApp {
+@SpringBootApplication
+public class ApplicationLogParserApp {
 
-    private ApplicationLogParserApp() {
-    }
-
-    public static void main(String[] args) throws Exception {
-        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", "8080"));
-
-        LogParserService logParserService = new LogParserService();
-        IssueAnalyzerService issueAnalyzerService = new IssueAnalyzerService();
-        ReportGenerationService reportGenerationService =
-                new ReportGenerationService(logParserService, issueAnalyzerService);
-
-        ReportApiServer reportApiServer = new ReportApiServer(port, reportGenerationService);
-        reportApiServer.start();
-
-        System.out.println("Application Log Parser API started on port " + port);
-        System.out.println("Endpoints:");
-        System.out.println("  GET  /api/health");
-        System.out.println("  POST /api/reports");
+    public static void main(String[] args) {
+        SpringApplication.run(ApplicationLogParserApp.class, args);
     }
 }

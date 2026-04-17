@@ -59,7 +59,9 @@ class ReportGenerationServiceTest {
     @ParameterizedTest
     @MethodSource("invalidFilePathInputs")
     void generateReportRejectsInvalidFilePaths(List<String> inputPaths, String expectedMessage) {
-        ReportGenerationService service = new ReportGenerationService(new LogParserService(), new IssueAnalyzerService());
+        ReportGenerationService service = new ReportGenerationService(
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService())
+        );
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
@@ -73,7 +75,9 @@ class ReportGenerationServiceTest {
     void generateReportReturnsSummaryAndIgnoredFiles() throws Exception {
         LogParserService logParserService = mock(LogParserService.class);
         IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
-        ReportGenerationService service = new ReportGenerationService(logParserService, issueAnalyzerService);
+        ReportGenerationService service = new ReportGenerationService(
+                new LogAnalysisService(logParserService, issueAnalyzerService)
+        );
 
         Path validLogFile = Files.createFile(tempDir.resolve("application.log"));
         String blankPath = " ";
@@ -136,7 +140,9 @@ class ReportGenerationServiceTest {
     void generateReportWritesSummaryWhenNoIssuesFound() throws Exception {
         LogParserService logParserService = mock(LogParserService.class);
         IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
-        ReportGenerationService service = new ReportGenerationService(logParserService, issueAnalyzerService);
+        ReportGenerationService service = new ReportGenerationService(
+                new LogAnalysisService(logParserService, issueAnalyzerService)
+        );
 
         Path validLogFile = Files.createFile(tempDir.resolve("clean.log"));
         List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-clean"));

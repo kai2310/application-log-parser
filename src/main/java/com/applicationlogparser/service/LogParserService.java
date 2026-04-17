@@ -16,7 +16,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.springframework.stereotype.Service;
 
+@Service
 public final class LogParserService {
     private static final DateTimeFormatter LOGBACK_ISO_8601_MILLIS = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss,SSS");
     private static final DateTimeFormatter LOGBACK_ISO_8601_MILLIS_DOT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");

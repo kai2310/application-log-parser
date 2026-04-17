@@ -1,11 +1,13 @@
 package com.applicationlogparser.service;
 
 import com.applicationlogparser.model.ParsedLogEntry;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 
+@Service
 public final class LogAnalysisService {
     private final LogParserService logParserService;
     private final IssueAnalyzerService issueAnalyzerService;

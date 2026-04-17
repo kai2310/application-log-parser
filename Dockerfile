@@ -11,7 +11,7 @@ FROM eclipse-temurin:25-jre
 
 WORKDIR /app
 
-COPY --from=build /app/target/application-log-parser-1.0.0-jar-with-dependencies.jar /app/application-log-parser.jar
+COPY --from=build /app/target/application-log-parser-1.0.0.jar /app/application-log-parser.jar
 
 EXPOSE 8080
 

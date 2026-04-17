@@ -1,6 +1,6 @@
 # application-log-parser
 
-Java 25 + Docker application that parses multiple log files and generates issue reports on demand through an API.
+Spring Boot + Java 25 + Docker application that parses multiple log files and generates issue reports on demand through an API.
 
 ## What this app does
 
@@ -21,10 +21,13 @@ Java 25 + Docker application that parses multiple log files and generates issue 
 
 ## Project structure
 
-- `src/main/java/com/applicationlogparser/api` - HTTP server and controllers
+- `src/main/java/com/applicationlogparser/api` - Spring MVC REST controllers
 - `src/main/java/com/applicationlogparser/service` - parsing, analysis, and report generation
 - `src/main/java/com/applicationlogparser/model` - domain models
 - `src/main/java/com/applicationlogparser/dto` - API request/response DTOs
+- `src/main/resources/application.properties` - Spring Boot configuration
+- `start.sh` - start the app with Maven/Spring Boot
+- `docker-start.sh` - build and start the app with Docker
 - `reports/` - generated at runtime (gitignored)
 
 ## Requirements
@@ -35,22 +38,22 @@ Java 25 + Docker application that parses multiple log files and generates issue 
 
 ## Run locally
 
-1. Build:
+1. Start the Spring Boot app with Maven:
 
 ```bash
-mvn clean package
+./start.sh
 ```
 
-2. Start API server:
+This script runs:
 
 ```bash
-java -jar target/application-log-parser-1.0.0-jar-with-dependencies.jar
+mvn spring-boot:run
 ```
 
 Default port is `8080`. Override with:
 
 ```bash
-PORT=9090 java -jar target/application-log-parser-1.0.0-jar-with-dependencies.jar
+PORT=9090 ./start.sh
 ```
 
 Health check:
@@ -149,15 +152,25 @@ No critical issues or errors were detected in the provided logs.
 
 ## Run with Docker
 
-Build image:
+Build image and run container:
+
+```bash
+./docker-start.sh
+```
+
+With optional environment variables:
+
+```bash
+HOST_PORT=8080 CONTAINER_PORT=8080 \
+LOGS_DIR=/absolute/path/to/your/logs \
+REPORTS_DIR=/absolute/path/to/your/project/reports \
+./docker-start.sh
+```
+
+This script runs:
 
 ```bash
 docker build -t application-log-parser:latest .
-```
-
-Run container:
-
-```bash
 docker run --rm -p 8080:8080 \
   -v /absolute/path/to/your/logs:/logs:ro \
   -v /absolute/path/to/your/project/reports:/app/reports \
