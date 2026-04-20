@@ -62,6 +62,11 @@ The Spring Boot Actuator management port is fixed at `9090` and exposes:
 - `/actuator/health`
 - `/actuator/info`
 
+OpenAPI 3 / Swagger documentation is available at:
+
+- `/v3/api-docs` (OpenAPI JSON)
+- `/swagger-ui.html` (Swagger UI)
+
 Health check:
 
 ```bash
