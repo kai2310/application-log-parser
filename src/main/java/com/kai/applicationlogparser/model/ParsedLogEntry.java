@@ -1,4 +1,4 @@
-package com.applicationlogparser.model;
+package com.kai.applicationlogparser.model;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;

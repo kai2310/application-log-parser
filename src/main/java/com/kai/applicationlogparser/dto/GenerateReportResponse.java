@@ -1,4 +1,4 @@
-package com.applicationlogparser.dto;
+package com.kai.applicationlogparser.dto;
 
 import java.util.List;
 

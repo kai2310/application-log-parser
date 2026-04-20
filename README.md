@@ -22,10 +22,10 @@ Spring Boot + Java 25 + Docker application that parses multiple log files and ge
 
 ## Project structure
 
-- `src/main/java/com/applicationlogparser/api` - Spring MVC REST controllers
-- `src/main/java/com/applicationlogparser/service` - parsing, analysis, and report generation
-- `src/main/java/com/applicationlogparser/model` - domain models
-- `src/main/java/com/applicationlogparser/dto` - API request/response DTOs
+- `src/main/java/com/kai/applicationlogparser/api` - Spring MVC REST controllers
+- `src/main/java/com/kai/applicationlogparser/service` - parsing, analysis, and report generation
+- `src/main/java/com/kai/applicationlogparser/model` - domain models
+- `src/main/java/com/kai/applicationlogparser/dto` - API request/response DTOs
 - `src/main/resources/application.properties` - Spring Boot configuration
 - `start.sh` - start the app with Maven/Spring Boot
 - `docker-start.sh` - build and start the app with Docker

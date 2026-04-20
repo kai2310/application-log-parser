@@ -1,9 +1,9 @@
-package com.applicationlogparser.service;
+package com.kai.applicationlogparser.service;
 
-import com.applicationlogparser.dto.GenerateReportResponse;
-import com.applicationlogparser.model.IssueRecord;
-import com.applicationlogparser.model.IssueType;
-import com.applicationlogparser.model.ParsedLogEntry;
+import com.kai.applicationlogparser.dto.GenerateReportResponse;
+import com.kai.applicationlogparser.model.IssueRecord;
+import com.kai.applicationlogparser.model.IssueType;
+import com.kai.applicationlogparser.model.ParsedLogEntry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

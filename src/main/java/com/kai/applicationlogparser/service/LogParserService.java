@@ -1,6 +1,6 @@
-package com.applicationlogparser.service;
+package com.kai.applicationlogparser.service;
 
-import com.applicationlogparser.model.ParsedLogEntry;
+import com.kai.applicationlogparser.model.ParsedLogEntry;
 
 import java.io.BufferedReader;
 import java.io.IOException;

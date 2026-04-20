@@ -1,4 +1,4 @@
-package com.applicationlogparser.dto;
+package com.kai.applicationlogparser.dto;
 
 public class GenerateFolderReportRequest {
 
