@@ -1,5 +1,6 @@
 package com.kai.applicationlogparser.service;
 
+import com.kai.applicationlogparser.model.IssueRecord;
 import com.kai.applicationlogparser.model.ParsedLogEntry;
 import org.springframework.stereotype.Service;
 
@@ -37,9 +38,9 @@ public final class LogAnalysisService {
             int criticalIssueGroups,
             int errorIssueGroups,
             int warningIssueGroups,
-            List<com.kai.applicationlogparser.model.IssueRecord> criticalIssues,
-            List<com.kai.applicationlogparser.model.IssueRecord> errorIssues,
-            List<com.kai.applicationlogparser.model.IssueRecord> warningIssues
+            List<IssueRecord> criticalIssues,
+            List<IssueRecord> errorIssues,
+            List<IssueRecord> warningIssues
     ) {
     }
 }
