@@ -1,8 +1,8 @@
-package com.applicationlogparser.service;
+package com.kai.applicationlogparser.service;
 
-import com.applicationlogparser.model.IssueRecord;
-import com.applicationlogparser.model.IssueType;
-import com.applicationlogparser.model.ParsedLogEntry;
+import com.kai.applicationlogparser.model.IssueRecord;
+import com.kai.applicationlogparser.model.IssueType;
+import com.kai.applicationlogparser.model.ParsedLogEntry;
 
 import java.time.OffsetDateTime;
 import java.time.ZoneId;

@@ -1,8 +1,8 @@
-package com.applicationlogparser.service;
+package com.kai.applicationlogparser.service;
 
-import com.applicationlogparser.dto.GenerateReportResponse;
-import com.applicationlogparser.model.IssueRecord;
-import com.applicationlogparser.model.IssueType;
+import com.kai.applicationlogparser.dto.GenerateReportResponse;
+import com.kai.applicationlogparser.model.IssueRecord;
+import com.kai.applicationlogparser.model.IssueType;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;

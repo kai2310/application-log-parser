@@ -1,9 +1,9 @@
-package com.applicationlogparser.api;
+package com.kai.applicationlogparser.api;
 
-import com.applicationlogparser.dto.GenerateReportRequest;
-import com.applicationlogparser.dto.GenerateReportResponse;
-import com.applicationlogparser.dto.GenerateFolderReportRequest;
-import com.applicationlogparser.service.ReportGenerationService;
+import com.kai.applicationlogparser.dto.GenerateReportRequest;
+import com.kai.applicationlogparser.dto.GenerateReportResponse;
+import com.kai.applicationlogparser.dto.GenerateFolderReportRequest;
+import com.kai.applicationlogparser.service.ReportGenerationService;
 import java.io.IOException;
 import java.util.List;
 import org.springframework.http.HttpStatus;
