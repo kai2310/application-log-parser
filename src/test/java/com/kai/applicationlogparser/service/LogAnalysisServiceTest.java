@@ -42,7 +42,7 @@ class LogAnalysisServiceTest {
 
     @BeforeEach
     void setUp() {
-        logAnalysisService = new LogAnalysisService(logParserService, issueAnalyzerService);
+        logAnalysisService = new LogAnalysisService(logParserService, issueAnalyzerService, "America/Los_Angeles");
     }
 
     @ParameterizedTest

@@ -2,6 +2,7 @@ package com.kai.applicationlogparser.service;
 
 import com.kai.applicationlogparser.model.IssueRecord;
 import com.kai.applicationlogparser.model.ParsedLogEntry;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -11,22 +12,25 @@ import java.util.List;
 
 @Service
 public final class LogAnalysisService {
-    private static final ZoneId DEFAULT_REPORT_ZONE = ZoneId.of("America/Los_Angeles");
-
     private final LogParserService logParserService;
     private final IssueAnalyzerService issueAnalyzerService;
+    private final ZoneId defaultReportZone;
 
-    public LogAnalysisService(LogParserService logParserService, IssueAnalyzerService issueAnalyzerService) {
+    public LogAnalysisService(
+            LogParserService logParserService,
+            IssueAnalyzerService issueAnalyzerService,
+            @Value("${app.report.timezone:America/Los_Angeles}") String reportTimezone) {
         this.logParserService = logParserService;
         this.issueAnalyzerService = issueAnalyzerService;
+        this.defaultReportZone = ZoneId.of(reportTimezone);
     }
 
     public AnalysisBundle analyze(List<Path> inputFiles) throws IOException {
-        return analyze(inputFiles, ZoneId.of("UTC"), DEFAULT_REPORT_ZONE);
+        return analyze(inputFiles, ZoneId.of("UTC"), defaultReportZone);
     }
 
     public AnalysisBundle analyze(List<Path> inputFiles, ZoneId parsingFallbackZone) throws IOException {
-        return analyze(inputFiles, parsingFallbackZone, DEFAULT_REPORT_ZONE);
+        return analyze(inputFiles, parsingFallbackZone, defaultReportZone);
     }
 
     public AnalysisBundle analyze(List<Path> inputFiles, ZoneId parsingFallbackZone, ZoneId reportZone) throws IOException {

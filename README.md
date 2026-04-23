@@ -32,6 +32,11 @@ Spring Boot + Java 25 + Docker application that parses multiple log files and ge
 - `docker-start.sh` - build and start the app with Docker
 - `reports/` - generated at runtime (gitignored)
 
+### Configurable report timezone
+
+- `app.report.timezone` controls the timezone used in generated reports.
+- Default in this project: `America/Los_Angeles`.
+
 ## Requirements
 
 - Java 25
@@ -171,7 +176,7 @@ Behavior:
 - Includes non-`.log` regular files from that folder in `ignoredFiles`.
 - Does not recurse into subfolders.
 - Uses `timezone` (or `UTC` default) only to interpret timestamps that do not contain an explicit offset.
-- Always converts and displays report timestamps in `America/Los_Angeles`.
+- Always converts and displays report timestamps in `app.report.timezone` (default `America/Los_Angeles`).
 - Returns `400` if folder path is blank, does not exist, or contains no `.log` files.
 - Returns `424` if `timezone` is not a valid Java `ZoneId`.
 

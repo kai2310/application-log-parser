@@ -64,7 +64,7 @@ class ReportGenerationServiceTest {
     @MethodSource("invalidFilePathInputs")
     void generateReportRejectsInvalidFilePaths(List<String> inputPaths, String expectedMessage) {
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService())
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService(), "America/Los_Angeles")
         );
 
         IllegalArgumentException exception = assertThrows(
@@ -80,7 +80,7 @@ class ReportGenerationServiceTest {
         LogParserService logParserService = mock(LogParserService.class);
         IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(logParserService, issueAnalyzerService)
+                new LogAnalysisService(logParserService, issueAnalyzerService, "America/Los_Angeles")
         );
 
         Path validLogFile = Files.createFile(tempDir.resolve("application.log"));
@@ -163,7 +163,7 @@ class ReportGenerationServiceTest {
         LogParserService logParserService = mock(LogParserService.class);
         IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(logParserService, issueAnalyzerService)
+                new LogAnalysisService(logParserService, issueAnalyzerService, "America/Los_Angeles")
         );
 
         Path validLogFile = Files.createFile(tempDir.resolve("clean.log"));
@@ -184,7 +184,7 @@ class ReportGenerationServiceTest {
     @Test
     void generateReportFromFolderRejectsInvalidFolderPath() {
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService())
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService(), "America/Los_Angeles")
         );
 
         IllegalArgumentException blankPathException = assertThrows(
@@ -203,7 +203,7 @@ class ReportGenerationServiceTest {
     @Test
     void generateReportFromFolderRejectsFolderWithoutLogFiles() throws Exception {
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService())
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService(), "America/Los_Angeles")
         );
         Path folder = Files.createDirectory(tempDir.resolve("input-folder"));
         Files.writeString(folder.resolve("notes.txt"), "not a log");
@@ -221,7 +221,7 @@ class ReportGenerationServiceTest {
         LogParserService logParserService = mock(LogParserService.class);
         IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(logParserService, issueAnalyzerService)
+                new LogAnalysisService(logParserService, issueAnalyzerService, "America/Los_Angeles")
         );
 
         Path folder = Files.createDirectory(tempDir.resolve("logs-folder"));
@@ -263,7 +263,7 @@ class ReportGenerationServiceTest {
         LogParserService logParserService = mock(LogParserService.class);
         IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(logParserService, issueAnalyzerService)
+                new LogAnalysisService(logParserService, issueAnalyzerService, "America/Los_Angeles")
         );
 
         Path validLogFile = Files.createFile(tempDir.resolve("utc-default.log"));
@@ -282,7 +282,7 @@ class ReportGenerationServiceTest {
     @Test
     void generateReportRejectsInvalidTimezone() {
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService())
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService(), "America/Los_Angeles")
         );
 
         InvalidTimezoneException exception = assertThrows(
