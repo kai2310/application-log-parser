@@ -5,7 +5,7 @@ Spring Boot + Java 25 + Docker application that parses multiple log files and ge
 ## What this app does
 
 - Accepts multiple log file paths in one request.
-- Accepts an optional `timezone` in request payloads (valid Java `ZoneId`, default `UTC`).
+- Accepts an optional `timezone` in request payloads (valid Java `ZoneId`, default `UTC`) as the fallback for timestamps that do not include an explicit offset.
 - Parses logs using this format:
   - `%d{ISO8601} [%thread] %X{CID} %-5level %logger{36} - %msg%n`
 - Detects and reports:
@@ -19,7 +19,7 @@ Spring Boot + Java 25 + Docker application that parses multiple log files and ge
 - If no critical/error/warning issues exist, still generates a report with a "nothing found" summary.
 - Saves report locally in:
   - `reports/application-logs-report-<datetime>.txt`
-- Datetime is generated using request `timezone` (or `UTC` when omitted).
+- Report timestamps are always generated and displayed in `America/Los_Angeles`.
 
 ## Project structure
 
@@ -170,7 +170,8 @@ Behavior:
 - Uses the same response payload shape as `POST /api/reports`.
 - Includes non-`.log` regular files from that folder in `ignoredFiles`.
 - Does not recurse into subfolders.
-- Uses `timezone` (or `UTC` default) to interpret timestamps that do not contain an explicit offset.
+- Uses `timezone` (or `UTC` default) only to interpret timestamps that do not contain an explicit offset.
+- Always converts and displays report timestamps in `America/Los_Angeles`.
 - Returns `400` if folder path is blank, does not exist, or contains no `.log` files.
 - Returns `424` if `timezone` is not a valid Java `ZoneId`.
 

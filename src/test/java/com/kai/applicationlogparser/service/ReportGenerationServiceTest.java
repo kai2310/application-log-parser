@@ -39,6 +39,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ReportGenerationServiceTest {
+    private static final ZoneId REPORT_ZONE = ZoneId.of("America/Los_Angeles");
 
     @TempDir
     Path tempDir;
@@ -119,7 +120,7 @@ class ReportGenerationServiceTest {
                 List.of("at com.app.pool.ConnectionPool.monitor(ConnectionPool.java:42)"),
                 "logger-c"
         );
-        when(issueAnalyzerService.analyze(parsedEntries, ZoneId.of("America/New_York")))
+        when(issueAnalyzerService.analyze(parsedEntries, REPORT_ZONE))
                 .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(criticalIssue), List.of(errorIssue), List.of(warningIssue)));
 
         GenerateReportResponse response = service.generateReport(
@@ -154,7 +155,7 @@ class ReportGenerationServiceTest {
         assertTrue(reportText.contains("NullPointerException happened"));
         assertTrue(reportText.contains("Connection pool usage is high"));
         assertFalse(reportText.contains("No critical issues, errors, or warnings were detected"));
-        assertTrue(reportText.contains("Timezone: America/New_York"));
+        assertTrue(reportText.contains("Timezone: America/Los_Angeles"));
     }
 
     @Test
@@ -168,7 +169,7 @@ class ReportGenerationServiceTest {
         Path validLogFile = Files.createFile(tempDir.resolve("clean.log"));
         List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-clean"));
         when(logParserService.parseFiles(anyList(), any(ZoneId.class))).thenReturn(parsedEntries);
-        when(issueAnalyzerService.analyze(parsedEntries, ZoneId.of("UTC")))
+        when(issueAnalyzerService.analyze(parsedEntries, REPORT_ZONE))
                 .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of(), List.of()));
 
         GenerateReportResponse response = service.generateReport(List.of(validLogFile.toString()), null);
@@ -234,7 +235,7 @@ class ReportGenerationServiceTest {
 
         List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-info"));
         when(logParserService.parseFiles(anyList(), any(ZoneId.class))).thenReturn(parsedEntries);
-        when(issueAnalyzerService.analyze(parsedEntries, ZoneId.of("UTC")))
+        when(issueAnalyzerService.analyze(parsedEntries, REPORT_ZONE))
                 .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of(), List.of()));
 
         GenerateReportResponse response = service.generateReportFromFolder(folder.toString(), "UTC");
@@ -268,14 +269,14 @@ class ReportGenerationServiceTest {
         Path validLogFile = Files.createFile(tempDir.resolve("utc-default.log"));
         List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-info"));
         when(logParserService.parseFiles(anyList(), any(ZoneId.class))).thenReturn(parsedEntries);
-        when(issueAnalyzerService.analyze(parsedEntries, ZoneId.of("UTC")))
+        when(issueAnalyzerService.analyze(parsedEntries, REPORT_ZONE))
                 .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of(), List.of()));
 
         GenerateReportResponse response = service.generateReport(List.of(validLogFile.toString()), null);
 
         String reportText = Files.readString(Paths.get(response.reportPath()), StandardCharsets.UTF_8);
-        assertTrue(reportText.contains("Timezone: UTC"));
-        verify(issueAnalyzerService, times(1)).analyze(parsedEntries, ZoneId.of("UTC"));
+        assertTrue(reportText.contains("Timezone: America/Los_Angeles"));
+        verify(issueAnalyzerService, times(1)).analyze(parsedEntries, REPORT_ZONE);
     }
 
     @Test

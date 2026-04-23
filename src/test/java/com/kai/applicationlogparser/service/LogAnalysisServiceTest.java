@@ -29,6 +29,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class LogAnalysisServiceTest {
+    private static final ZoneId REPORT_ZONE = ZoneId.of("America/Los_Angeles");
+
 
     @Mock
     private LogParserService logParserService;
@@ -66,7 +68,7 @@ class LogAnalysisServiceTest {
         );
 
         when(logParserService.parseFiles(inputFiles, ZoneId.of("UTC"))).thenReturn(parsedEntries);
-        when(issueAnalyzerService.analyze(parsedEntries, ZoneId.of("UTC"))).thenReturn(analysisResult);
+        when(issueAnalyzerService.analyze(parsedEntries, REPORT_ZONE)).thenReturn(analysisResult);
 
         LogAnalysisService.AnalysisBundle bundle = logAnalysisService.analyze(inputFiles);
 
@@ -78,7 +80,7 @@ class LogAnalysisServiceTest {
         assertEquals(errorIssues, bundle.errorIssues());
         assertEquals(warningIssues, bundle.warningIssues());
         verify(logParserService).parseFiles(inputFiles, ZoneId.of("UTC"));
-        verify(issueAnalyzerService).analyze(parsedEntries, ZoneId.of("UTC"));
+        verify(issueAnalyzerService).analyze(parsedEntries, REPORT_ZONE);
     }
 
     @Test
@@ -101,15 +103,19 @@ class LogAnalysisServiceTest {
                 List.of()
         );
 
-        ZoneId targetZone = ZoneId.of("America/New_York");
-        when(logParserService.parseFiles(inputFiles, targetZone)).thenReturn(parsedEntries);
-        when(issueAnalyzerService.analyze(parsedEntries, targetZone)).thenReturn(analysisResult);
+        ZoneId parsingFallbackZone = ZoneId.of("America/New_York");
+        when(logParserService.parseFiles(inputFiles, parsingFallbackZone)).thenReturn(parsedEntries);
+        when(issueAnalyzerService.analyze(parsedEntries, REPORT_ZONE)).thenReturn(analysisResult);
 
-        LogAnalysisService.AnalysisBundle bundle = logAnalysisService.analyze(inputFiles, targetZone);
+        LogAnalysisService.AnalysisBundle bundle = logAnalysisService.analyze(
+                inputFiles,
+                parsingFallbackZone,
+                REPORT_ZONE
+        );
 
         assertEquals(1, bundle.totalEntries());
-        verify(logParserService).parseFiles(inputFiles, targetZone);
-        verify(issueAnalyzerService).analyze(parsedEntries, targetZone);
+        verify(logParserService).parseFiles(inputFiles, parsingFallbackZone);
+        verify(issueAnalyzerService).analyze(parsedEntries, REPORT_ZONE);
     }
 
     private static Stream<Arguments> analysisScenarios() {

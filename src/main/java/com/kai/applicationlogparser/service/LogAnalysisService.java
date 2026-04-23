@@ -11,6 +11,8 @@ import java.util.List;
 
 @Service
 public final class LogAnalysisService {
+    private static final ZoneId DEFAULT_REPORT_ZONE = ZoneId.of("America/Los_Angeles");
+
     private final LogParserService logParserService;
     private final IssueAnalyzerService issueAnalyzerService;
 
@@ -20,12 +22,16 @@ public final class LogAnalysisService {
     }
 
     public AnalysisBundle analyze(List<Path> inputFiles) throws IOException {
-        return analyze(inputFiles, ZoneId.of("UTC"));
+        return analyze(inputFiles, ZoneId.of("UTC"), DEFAULT_REPORT_ZONE);
     }
 
-    public AnalysisBundle analyze(List<Path> inputFiles, ZoneId targetZone) throws IOException {
-        List<ParsedLogEntry> entries = logParserService.parseFiles(inputFiles, targetZone);
-        IssueAnalyzerService.AnalysisResult analysisResult = issueAnalyzerService.analyze(entries, targetZone);
+    public AnalysisBundle analyze(List<Path> inputFiles, ZoneId parsingFallbackZone) throws IOException {
+        return analyze(inputFiles, parsingFallbackZone, DEFAULT_REPORT_ZONE);
+    }
+
+    public AnalysisBundle analyze(List<Path> inputFiles, ZoneId parsingFallbackZone, ZoneId reportZone) throws IOException {
+        List<ParsedLogEntry> entries = logParserService.parseFiles(inputFiles, parsingFallbackZone);
+        IssueAnalyzerService.AnalysisResult analysisResult = issueAnalyzerService.analyze(entries, reportZone);
 
         return new AnalysisBundle(
                 entries.size(),

@@ -24,6 +24,7 @@ public final class ReportGenerationService {
 
     private static final DateTimeFormatter FILE_NAME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
     private static final DateTimeFormatter DISPLAY_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss XXX");
+    private static final ZoneId REPORT_TIMEZONE = ZoneId.of("America/Los_Angeles");
 
     private final LogAnalysisService logAnalysisService;
 
@@ -40,11 +41,11 @@ public final class ReportGenerationService {
             throw new IllegalArgumentException("filePaths must contain at least one log file path.");
         }
 
-        ZoneId targetZone = resolveTargetZone(timezone);
-        return generateReport(filePaths, List.of(), targetZone);
+        ZoneId parsingFallbackZone = resolveParsingFallbackZone(timezone);
+        return generateReport(filePaths, List.of(), parsingFallbackZone);
     }
 
-    private GenerateReportResponse generateReport(List<String> filePaths, List<String> preIgnoredFiles, ZoneId targetZone) throws IOException {
+    private GenerateReportResponse generateReport(List<String> filePaths, List<String> preIgnoredFiles, ZoneId parsingFallbackZone) throws IOException {
         List<Path> validPaths = new ArrayList<>();
         List<String> ignoredFiles = new ArrayList<>(preIgnoredFiles);
         for (String filePath : filePaths) {
@@ -65,11 +66,15 @@ public final class ReportGenerationService {
             throw new IllegalArgumentException("None of the provided filePaths points to an existing file.");
         }
 
-        return generateReportFromValidPaths(validPaths, ignoredFiles, targetZone);
+        return generateReportFromValidPaths(validPaths, ignoredFiles, parsingFallbackZone);
     }
 
-    private GenerateReportResponse generateReportFromValidPaths(List<Path> validPaths, List<String> ignoredFiles, ZoneId targetZone) throws IOException {
-        LogAnalysisService.AnalysisBundle analysisBundle = logAnalysisService.analyze(validPaths, targetZone);
+    private GenerateReportResponse generateReportFromValidPaths(List<Path> validPaths, List<String> ignoredFiles, ZoneId parsingFallbackZone) throws IOException {
+        LogAnalysisService.AnalysisBundle analysisBundle = logAnalysisService.analyze(
+                validPaths,
+                parsingFallbackZone,
+                REPORT_TIMEZONE
+        );
 
         List<IssueRecord> allIssues = new ArrayList<>(analysisBundle.criticalIssues());
         allIssues.addAll(analysisBundle.errorIssues());
@@ -78,7 +83,7 @@ public final class ReportGenerationService {
         Path reportPath = writeReport(
                 allIssues,
                 validPaths.stream().map(Path::toString).toList(),
-                targetZone
+                REPORT_TIMEZONE
         );
 
         return new GenerateReportResponse(
@@ -101,7 +106,7 @@ public final class ReportGenerationService {
             throw new IllegalArgumentException("folderPath must be provided.");
         }
 
-        ZoneId targetZone = resolveTargetZone(timezone);
+        ZoneId parsingFallbackZone = resolveParsingFallbackZone(timezone);
         Path resolvedFolderPath = Paths.get(folderPath).toAbsolutePath().normalize();
         if (!Files.isDirectory(resolvedFolderPath)) {
             throw new IllegalArgumentException("folderPath must point to an existing directory.");
@@ -131,7 +136,7 @@ public final class ReportGenerationService {
             throw new IllegalArgumentException("No .log files were found in the provided folderPath.");
         }
 
-        return generateReport(discoveredLogFilePaths, ignoredFilePaths, targetZone);
+        return generateReport(discoveredLogFilePaths, ignoredFilePaths, parsingFallbackZone);
     }
 
     private boolean isLogFile(Path path) {
@@ -152,7 +157,7 @@ public final class ReportGenerationService {
         return reportPath.toAbsolutePath();
     }
 
-    private ZoneId resolveTargetZone(String timezone) {
+    private ZoneId resolveParsingFallbackZone(String timezone) {
         if (timezone == null || timezone.isBlank()) {
             return ZoneId.of("UTC");
         }
