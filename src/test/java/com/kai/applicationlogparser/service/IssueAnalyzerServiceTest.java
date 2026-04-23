@@ -8,6 +8,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -78,6 +79,20 @@ class IssueAnalyzerServiceTest {
         assertEquals("app.logger", issue.logger());
         assertTrue(issue.title().contains("Cache nearing capacity"));
         assertTrue(issue.stackTraceLines().contains("at a.b.CacheMonitor.check(CacheMonitor.java:10)"));
+    }
+
+    @Test
+    void analyze_convertsOccurrencesIntoTargetTimezone() {
+        ParsedLogEntry entry = entry("ERROR", "TimeoutException", List.of());
+
+        IssueAnalyzerService.AnalysisResult result = subject.analyze(List.of(entry), ZoneId.of("America/Los_Angeles"));
+
+        assertEquals(1, result.errorIssues().size());
+        assertEquals(
+                ZoneId.of("America/Los_Angeles"),
+                result.errorIssues().get(0).occurrences().get(0).getZone()
+        );
+        assertEquals(3, result.errorIssues().get(0).occurrences().get(0).getHour());
     }
 
     private static Stream<String> criticalMessages() {

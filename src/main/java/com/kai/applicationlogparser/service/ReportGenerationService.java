@@ -1,5 +1,6 @@
 package com.kai.applicationlogparser.service;
 
+import com.kai.applicationlogparser.api.InvalidTimezoneException;
 import com.kai.applicationlogparser.dto.GenerateReportResponse;
 import com.kai.applicationlogparser.model.IssueRecord;
 import com.kai.applicationlogparser.model.IssueType;
@@ -23,6 +24,7 @@ public final class ReportGenerationService {
 
     private static final DateTimeFormatter FILE_NAME_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss");
     private static final DateTimeFormatter DISPLAY_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss XXX");
+    private static final ZoneId REPORT_TIMEZONE = ZoneId.of("America/Los_Angeles");
 
     private final LogAnalysisService logAnalysisService;
 
@@ -31,14 +33,19 @@ public final class ReportGenerationService {
     }
 
     public GenerateReportResponse generateReport(List<String> filePaths) throws IOException {
+        return generateReport(filePaths, null);
+    }
+
+    public GenerateReportResponse generateReport(List<String> filePaths, String timezone) throws IOException {
         if (filePaths == null || filePaths.isEmpty()) {
             throw new IllegalArgumentException("filePaths must contain at least one log file path.");
         }
 
-        return generateReport(filePaths, List.of());
+        ZoneId parsingFallbackZone = resolveParsingFallbackZone(timezone);
+        return generateReport(filePaths, List.of(), parsingFallbackZone);
     }
 
-    private GenerateReportResponse generateReport(List<String> filePaths, List<String> preIgnoredFiles) throws IOException {
+    private GenerateReportResponse generateReport(List<String> filePaths, List<String> preIgnoredFiles, ZoneId parsingFallbackZone) throws IOException {
         List<Path> validPaths = new ArrayList<>();
         List<String> ignoredFiles = new ArrayList<>(preIgnoredFiles);
         for (String filePath : filePaths) {
@@ -59,11 +66,15 @@ public final class ReportGenerationService {
             throw new IllegalArgumentException("None of the provided filePaths points to an existing file.");
         }
 
-        return generateReportFromValidPaths(validPaths, ignoredFiles);
+        return generateReportFromValidPaths(validPaths, ignoredFiles, parsingFallbackZone);
     }
 
-    private GenerateReportResponse generateReportFromValidPaths(List<Path> validPaths, List<String> ignoredFiles) throws IOException {
-        LogAnalysisService.AnalysisBundle analysisBundle = logAnalysisService.analyze(validPaths);
+    private GenerateReportResponse generateReportFromValidPaths(List<Path> validPaths, List<String> ignoredFiles, ZoneId parsingFallbackZone) throws IOException {
+        LogAnalysisService.AnalysisBundle analysisBundle = logAnalysisService.analyze(
+                validPaths,
+                parsingFallbackZone,
+                REPORT_TIMEZONE
+        );
 
         List<IssueRecord> allIssues = new ArrayList<>(analysisBundle.criticalIssues());
         allIssues.addAll(analysisBundle.errorIssues());
@@ -71,7 +82,8 @@ public final class ReportGenerationService {
 
         Path reportPath = writeReport(
                 allIssues,
-                validPaths.stream().map(Path::toString).toList()
+                validPaths.stream().map(Path::toString).toList(),
+                REPORT_TIMEZONE
         );
 
         return new GenerateReportResponse(
@@ -86,10 +98,15 @@ public final class ReportGenerationService {
     }
 
     public GenerateReportResponse generateReportFromFolder(String folderPath) throws IOException {
+        return generateReportFromFolder(folderPath, null);
+    }
+
+    public GenerateReportResponse generateReportFromFolder(String folderPath, String timezone) throws IOException {
         if (folderPath == null || folderPath.isBlank()) {
             throw new IllegalArgumentException("folderPath must be provided.");
         }
 
+        ZoneId parsingFallbackZone = resolveParsingFallbackZone(timezone);
         Path resolvedFolderPath = Paths.get(folderPath).toAbsolutePath().normalize();
         if (!Files.isDirectory(resolvedFolderPath)) {
             throw new IllegalArgumentException("folderPath must point to an existing directory.");
@@ -119,7 +136,7 @@ public final class ReportGenerationService {
             throw new IllegalArgumentException("No .log files were found in the provided folderPath.");
         }
 
-        return generateReport(discoveredLogFilePaths, ignoredFilePaths);
+        return generateReport(discoveredLogFilePaths, ignoredFilePaths, parsingFallbackZone);
     }
 
     private boolean isLogFile(Path path) {
@@ -127,18 +144,28 @@ public final class ReportGenerationService {
         return fileName.toLowerCase(Locale.ROOT).endsWith(".log");
     }
 
-    private Path writeReport(List<IssueRecord> issues, List<String> inputFiles) throws IOException {
-        ZoneId systemZone = ZoneId.systemDefault();
-        ZonedDateTime now = ZonedDateTime.now(systemZone);
+    private Path writeReport(List<IssueRecord> issues, List<String> inputFiles, ZoneId targetZone) throws IOException {
+        ZonedDateTime now = ZonedDateTime.now(targetZone);
         String fileName = "application-logs-report-" + FILE_NAME_FORMATTER.format(now) + ".txt";
 
         Path reportsDir = Paths.get("reports");
         Files.createDirectories(reportsDir);
 
         Path reportPath = reportsDir.resolve(fileName);
-        String reportContent = buildReport(issues, inputFiles, now, systemZone);
+        String reportContent = buildReport(issues, inputFiles, now, targetZone);
         Files.writeString(reportPath, reportContent, StandardCharsets.UTF_8);
         return reportPath.toAbsolutePath();
+    }
+
+    private ZoneId resolveParsingFallbackZone(String timezone) {
+        if (timezone == null || timezone.isBlank()) {
+            return ZoneId.of("UTC");
+        }
+        try {
+            return ZoneId.of(timezone.trim());
+        } catch (RuntimeException ex) {
+            throw new InvalidTimezoneException(timezone, ex);
+        }
     }
 
     private String buildReport(List<IssueRecord> issues, List<String> inputFiles, ZonedDateTime generatedAt, ZoneId zoneId) {

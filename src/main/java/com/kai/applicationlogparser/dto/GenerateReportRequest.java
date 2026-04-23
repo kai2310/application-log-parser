@@ -22,12 +22,27 @@ public class GenerateReportRequest {
     )
     private List<String> filePaths;
 
+    @Schema(
+            description = "Timezone used to interpret log timestamps without an explicit offset. "
+                    + "Must be a valid java.time.ZoneId; defaults to UTC when omitted.",
+            example = "America/Los_Angeles"
+    )
+    private String timezone;
+
     public List<String> getFilePaths() {
         return filePaths;
     }
 
     public void setFilePaths(List<String> filePaths) {
         this.filePaths = filePaths;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
     }
 
 }

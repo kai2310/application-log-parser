@@ -1,6 +1,7 @@
 package com.kai.applicationlogparser.service;
 
 import com.kai.applicationlogparser.dto.GenerateReportResponse;
+import com.kai.applicationlogparser.api.InvalidTimezoneException;
 import com.kai.applicationlogparser.model.IssueRecord;
 import com.kai.applicationlogparser.model.IssueType;
 import com.kai.applicationlogparser.model.ParsedLogEntry;
@@ -29,13 +30,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class ReportGenerationServiceTest {
+    private static final ZoneId REPORT_ZONE = ZoneId.of("America/Los_Angeles");
 
     @TempDir
     Path tempDir;
@@ -60,7 +64,7 @@ class ReportGenerationServiceTest {
     @MethodSource("invalidFilePathInputs")
     void generateReportRejectsInvalidFilePaths(List<String> inputPaths, String expectedMessage) {
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService())
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService(), "America/Los_Angeles")
         );
 
         IllegalArgumentException exception = assertThrows(
@@ -76,7 +80,7 @@ class ReportGenerationServiceTest {
         LogParserService logParserService = mock(LogParserService.class);
         IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(logParserService, issueAnalyzerService)
+                new LogAnalysisService(logParserService, issueAnalyzerService, "America/Los_Angeles")
         );
 
         Path validLogFile = Files.createFile(tempDir.resolve("application.log"));
@@ -87,7 +91,7 @@ class ReportGenerationServiceTest {
                 parsedEntry("ERROR", "memory leak detected", "logger-a"),
                 parsedEntry("ERROR", "NullPointerException happened", "logger-b")
         );
-        when(logParserService.parseFiles(anyList())).thenReturn(parsedEntries);
+        when(logParserService.parseFiles(anyList(), any(ZoneId.class))).thenReturn(parsedEntries);
 
         IssueRecord criticalIssue = new IssueRecord(
                 IssueType.CRITICAL,
@@ -116,10 +120,13 @@ class ReportGenerationServiceTest {
                 List.of("at com.app.pool.ConnectionPool.monitor(ConnectionPool.java:42)"),
                 "logger-c"
         );
-        when(issueAnalyzerService.analyze(parsedEntries))
+        when(issueAnalyzerService.analyze(parsedEntries, REPORT_ZONE))
                 .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(criticalIssue), List.of(errorIssue), List.of(warningIssue)));
 
-        GenerateReportResponse response = service.generateReport(List.of(validLogFile.toString(), blankPath, missingPath));
+        GenerateReportResponse response = service.generateReport(
+                List.of(validLogFile.toString(), blankPath, missingPath),
+                "America/New_York"
+        );
 
         assertNotNull(response.reportPath());
         assertTrue(response.reportPath().contains("reports/application-logs-report-"));
@@ -131,10 +138,12 @@ class ReportGenerationServiceTest {
         assertEquals("Report generated successfully", response.message());
 
         ArgumentCaptor<List<Path>> validPathCaptor = ArgumentCaptor.forClass(List.class);
-        verify(logParserService, times(1)).parseFiles(validPathCaptor.capture());
+        ArgumentCaptor<ZoneId> zoneCaptor = ArgumentCaptor.forClass(ZoneId.class);
+        verify(logParserService, times(1)).parseFiles(validPathCaptor.capture(), zoneCaptor.capture());
         List<Path> passedPaths = validPathCaptor.getValue();
         assertEquals(1, passedPaths.size());
         assertEquals(validLogFile.toAbsolutePath().normalize(), passedPaths.getFirst());
+        assertEquals(ZoneId.of("America/New_York"), zoneCaptor.getValue());
 
         Path reportPath = Paths.get(response.reportPath());
         assertTrue(Files.exists(reportPath));
@@ -146,6 +155,7 @@ class ReportGenerationServiceTest {
         assertTrue(reportText.contains("NullPointerException happened"));
         assertTrue(reportText.contains("Connection pool usage is high"));
         assertFalse(reportText.contains("No critical issues, errors, or warnings were detected"));
+        assertTrue(reportText.contains("Timezone: America/Los_Angeles"));
     }
 
     @Test
@@ -153,16 +163,16 @@ class ReportGenerationServiceTest {
         LogParserService logParserService = mock(LogParserService.class);
         IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(logParserService, issueAnalyzerService)
+                new LogAnalysisService(logParserService, issueAnalyzerService, "America/Los_Angeles")
         );
 
         Path validLogFile = Files.createFile(tempDir.resolve("clean.log"));
         List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-clean"));
-        when(logParserService.parseFiles(anyList())).thenReturn(parsedEntries);
-        when(issueAnalyzerService.analyze(parsedEntries))
+        when(logParserService.parseFiles(anyList(), any(ZoneId.class))).thenReturn(parsedEntries);
+        when(issueAnalyzerService.analyze(parsedEntries, REPORT_ZONE))
                 .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of(), List.of()));
 
-        GenerateReportResponse response = service.generateReport(List.of(validLogFile.toString()));
+        GenerateReportResponse response = service.generateReport(List.of(validLogFile.toString()), null);
         String reportText = Files.readString(Paths.get(response.reportPath()), StandardCharsets.UTF_8);
 
         assertTrue(reportText.contains("No critical issues detected."));
@@ -174,7 +184,7 @@ class ReportGenerationServiceTest {
     @Test
     void generateReportFromFolderRejectsInvalidFolderPath() {
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService())
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService(), "America/Los_Angeles")
         );
 
         IllegalArgumentException blankPathException = assertThrows(
@@ -193,7 +203,7 @@ class ReportGenerationServiceTest {
     @Test
     void generateReportFromFolderRejectsFolderWithoutLogFiles() throws Exception {
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService())
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService(), "America/Los_Angeles")
         );
         Path folder = Files.createDirectory(tempDir.resolve("input-folder"));
         Files.writeString(folder.resolve("notes.txt"), "not a log");
@@ -211,7 +221,7 @@ class ReportGenerationServiceTest {
         LogParserService logParserService = mock(LogParserService.class);
         IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
         ReportGenerationService service = new ReportGenerationService(
-                new LogAnalysisService(logParserService, issueAnalyzerService)
+                new LogAnalysisService(logParserService, issueAnalyzerService, "America/Los_Angeles")
         );
 
         Path folder = Files.createDirectory(tempDir.resolve("logs-folder"));
@@ -224,14 +234,14 @@ class ReportGenerationServiceTest {
         Files.createDirectory(folder.resolve("nested"));
 
         List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-info"));
-        when(logParserService.parseFiles(anyList())).thenReturn(parsedEntries);
-        when(issueAnalyzerService.analyze(parsedEntries))
+        when(logParserService.parseFiles(anyList(), any(ZoneId.class))).thenReturn(parsedEntries);
+        when(issueAnalyzerService.analyze(parsedEntries, REPORT_ZONE))
                 .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of(), List.of()));
 
-        GenerateReportResponse response = service.generateReportFromFolder(folder.toString());
+        GenerateReportResponse response = service.generateReportFromFolder(folder.toString(), "UTC");
 
         ArgumentCaptor<List<Path>> validPathCaptor = ArgumentCaptor.forClass(List.class);
-        verify(logParserService, times(1)).parseFiles(validPathCaptor.capture());
+        verify(logParserService, times(1)).parseFiles(validPathCaptor.capture(), eq(ZoneId.of("UTC")));
         List<Path> passedPaths = validPathCaptor.getValue();
         assertEquals(2, passedPaths.size());
         assertEquals(firstLog.toAbsolutePath().normalize(), passedPaths.get(0));
@@ -246,6 +256,40 @@ class ReportGenerationServiceTest {
         );
         assertEquals("Report generated successfully", response.message());
         assertTrue(Files.exists(Paths.get(response.reportPath())));
+    }
+
+    @Test
+    void generateReportUsesUtcWhenTimezoneMissing() throws Exception {
+        LogParserService logParserService = mock(LogParserService.class);
+        IssueAnalyzerService issueAnalyzerService = mock(IssueAnalyzerService.class);
+        ReportGenerationService service = new ReportGenerationService(
+                new LogAnalysisService(logParserService, issueAnalyzerService, "America/Los_Angeles")
+        );
+
+        Path validLogFile = Files.createFile(tempDir.resolve("utc-default.log"));
+        List<ParsedLogEntry> parsedEntries = List.of(parsedEntry("INFO", "Startup finished", "logger-info"));
+        when(logParserService.parseFiles(anyList(), any(ZoneId.class))).thenReturn(parsedEntries);
+        when(issueAnalyzerService.analyze(parsedEntries, REPORT_ZONE))
+                .thenReturn(new IssueAnalyzerService.AnalysisResult(List.of(), List.of(), List.of()));
+
+        GenerateReportResponse response = service.generateReport(List.of(validLogFile.toString()), null);
+
+        String reportText = Files.readString(Paths.get(response.reportPath()), StandardCharsets.UTF_8);
+        assertTrue(reportText.contains("Timezone: America/Los_Angeles"));
+        verify(issueAnalyzerService, times(1)).analyze(parsedEntries, REPORT_ZONE);
+    }
+
+    @Test
+    void generateReportRejectsInvalidTimezone() {
+        ReportGenerationService service = new ReportGenerationService(
+                new LogAnalysisService(new LogParserService(), new IssueAnalyzerService(), "America/Los_Angeles")
+        );
+
+        InvalidTimezoneException exception = assertThrows(
+                InvalidTimezoneException.class,
+                () -> service.generateReport(List.of("/tmp/app.log"), "Mars/Phobos")
+        );
+        assertTrue(exception.getMessage().contains("timezone must be a valid java.time.ZoneId"));
     }
 
     private static Stream<Arguments> invalidFilePathInputs() {

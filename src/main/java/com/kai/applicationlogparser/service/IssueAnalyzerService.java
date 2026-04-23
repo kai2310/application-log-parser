@@ -34,6 +34,10 @@ public class IssueAnalyzerService {
     );
 
     public AnalysisResult analyze(List<ParsedLogEntry> entries) {
+        return analyze(entries, ZoneId.of("UTC"));
+    }
+
+    public AnalysisResult analyze(List<ParsedLogEntry> entries, ZoneId targetZone) {
         Map<String, Aggregation> criticalAggregations = new LinkedHashMap<>();
         Map<String, Aggregation> errorAggregations = new LinkedHashMap<>();
         Map<String, Aggregation> warningAggregations = new LinkedHashMap<>();
@@ -62,18 +66,18 @@ public class IssueAnalyzerService {
         }
 
         return new AnalysisResult(
-            toSortedRecords(criticalAggregations.values(), IssueType.CRITICAL),
-            toSortedRecords(errorAggregations.values(), IssueType.ERROR),
-            toSortedRecords(warningAggregations.values(), IssueType.WARNING)
+            toSortedRecords(criticalAggregations.values(), IssueType.CRITICAL, targetZone),
+            toSortedRecords(errorAggregations.values(), IssueType.ERROR, targetZone),
+            toSortedRecords(warningAggregations.values(), IssueType.WARNING, targetZone)
         );
     }
 
-    private List<IssueRecord> toSortedRecords(Iterable<Aggregation> aggregations, IssueType issueType) {
+    private List<IssueRecord> toSortedRecords(Iterable<Aggregation> aggregations, IssueType issueType, ZoneId targetZone) {
         List<IssueRecord> result = new ArrayList<>();
         for (Aggregation aggregation : aggregations) {
             List<ZonedDateTime> sortedTimes = aggregation.times.stream()
                 .sorted()
-                .map(offsetDateTime -> offsetDateTime.atZoneSameInstant(ZoneId.systemDefault()))
+                .map(offsetDateTime -> offsetDateTime.atZoneSameInstant(targetZone))
                 .toList();
             String primaryCause = aggregation.causes.isEmpty()
                     ? inferCauseFromSummary(aggregation.summary)
@@ -93,7 +97,7 @@ public class IssueAnalyzerService {
 
         return result.stream()
             .sorted(Comparator.comparing(
-                record -> record.occurrences().isEmpty() ? ZonedDateTime.of(9999, 12, 31, 23, 59, 59, 0, ZoneId.systemDefault()) : record.occurrences().get(0)
+                record -> record.occurrences().isEmpty() ? ZonedDateTime.of(9999, 12, 31, 23, 59, 59, 0, targetZone) : record.occurrences().get(0)
             ))
             .collect(Collectors.toList());
     }
