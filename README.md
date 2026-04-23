@@ -5,6 +5,7 @@ Spring Boot + Java 25 + Docker application that parses multiple log files and ge
 ## What this app does
 
 - Accepts multiple log file paths in one request.
+- Accepts an optional `timezone` in request payloads (valid Java `ZoneId`, default `UTC`).
 - Parses logs using this format:
   - `%d{ISO8601} [%thread] %X{CID} %-5level %logger{36} - %msg%n`
 - Detects and reports:
@@ -18,7 +19,7 @@ Spring Boot + Java 25 + Docker application that parses multiple log files and ge
 - If no critical/error/warning issues exist, still generates a report with a "nothing found" summary.
 - Saves report locally in:
   - `reports/application-logs-report-<datetime>.txt`
-  - Datetime is generated in current system/user timezone.
+- Datetime is generated using request `timezone` (or `UTC` when omitted).
 
 ## Project structure
 
@@ -93,7 +94,8 @@ Request body:
   "filePaths": [
     "/absolute/path/to/app-1.log",
     "/absolute/path/to/app-2.log"
-  ]
+  ],
+  "timezone": "UTC"
 }
 ```
 
@@ -106,7 +108,8 @@ curl -X POST "http://localhost:8080/api/reports" \
     "filePaths": [
       "/workspace/sample-logs/application.log",
       "/workspace/sample-logs/application-2.log"
-    ]
+    ],
+    "timezone": "America/New_York"
   }'
 ```
 
@@ -156,7 +159,8 @@ Request body for folder endpoint:
 
 ```json
 {
-  "folderPath": "/absolute/path/to/folder/with/log-files"
+  "folderPath": "/absolute/path/to/folder/with/log-files",
+  "timezone": "UTC"
 }
 ```
 
@@ -166,7 +170,9 @@ Behavior:
 - Uses the same response payload shape as `POST /api/reports`.
 - Includes non-`.log` regular files from that folder in `ignoredFiles`.
 - Does not recurse into subfolders.
+- Uses `timezone` (or `UTC` default) to interpret timestamps that do not contain an explicit offset.
 - Returns `400` if folder path is blank, does not exist, or contains no `.log` files.
+- Returns `424` if `timezone` is not a valid Java `ZoneId`.
 
 ## Report format
 

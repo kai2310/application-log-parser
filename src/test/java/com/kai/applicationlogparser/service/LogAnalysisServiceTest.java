@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -64,8 +65,8 @@ class LogAnalysisServiceTest {
                 warningIssues
         );
 
-        when(logParserService.parseFiles(inputFiles)).thenReturn(parsedEntries);
-        when(issueAnalyzerService.analyze(parsedEntries)).thenReturn(analysisResult);
+        when(logParserService.parseFiles(inputFiles, ZoneId.of("UTC"))).thenReturn(parsedEntries);
+        when(issueAnalyzerService.analyze(parsedEntries, ZoneId.of("UTC"))).thenReturn(analysisResult);
 
         LogAnalysisService.AnalysisBundle bundle = logAnalysisService.analyze(inputFiles);
 
@@ -76,18 +77,39 @@ class LogAnalysisServiceTest {
         assertEquals(criticalIssues, bundle.criticalIssues());
         assertEquals(errorIssues, bundle.errorIssues());
         assertEquals(warningIssues, bundle.warningIssues());
-        verify(logParserService).parseFiles(inputFiles);
-        verify(issueAnalyzerService).analyze(parsedEntries);
+        verify(logParserService).parseFiles(inputFiles, ZoneId.of("UTC"));
+        verify(issueAnalyzerService).analyze(parsedEntries, ZoneId.of("UTC"));
     }
 
     @Test
     void analyzeShouldPropagateIOExceptionFromParser() throws IOException {
         List<Path> inputFiles = List.of(Path.of("/tmp/failing.log"));
-        when(logParserService.parseFiles(inputFiles)).thenThrow(new IOException("Cannot read file"));
+        when(logParserService.parseFiles(inputFiles, ZoneId.of("UTC"))).thenThrow(new IOException("Cannot read file"));
 
         IOException exception = assertThrows(IOException.class, () -> logAnalysisService.analyze(inputFiles));
 
         assertEquals("Cannot read file", exception.getMessage());
+    }
+
+    @Test
+    void analyzeShouldPassProvidedTimezoneToDependencies() throws IOException {
+        List<Path> inputFiles = List.of(Path.of("/tmp/custom-zone.log"));
+        List<ParsedLogEntry> parsedEntries = List.of(entryAt(0));
+        IssueAnalyzerService.AnalysisResult analysisResult = new IssueAnalyzerService.AnalysisResult(
+                List.of(),
+                List.of(),
+                List.of()
+        );
+
+        ZoneId targetZone = ZoneId.of("America/New_York");
+        when(logParserService.parseFiles(inputFiles, targetZone)).thenReturn(parsedEntries);
+        when(issueAnalyzerService.analyze(parsedEntries, targetZone)).thenReturn(analysisResult);
+
+        LogAnalysisService.AnalysisBundle bundle = logAnalysisService.analyze(inputFiles, targetZone);
+
+        assertEquals(1, bundle.totalEntries());
+        verify(logParserService).parseFiles(inputFiles, targetZone);
+        verify(issueAnalyzerService).analyze(parsedEntries, targetZone);
     }
 
     private static Stream<Arguments> analysisScenarios() {

@@ -32,10 +32,11 @@ public class ReportController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Report generated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid request input"),
+            @ApiResponse(responseCode = "424", description = "Invalid timezone"),
             @ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     public GenerateReportResponse generateReport(@RequestBody GenerateReportRequest request) throws IOException {
-        return reportGenerationService.generateReport(request.getFilePaths());
+        return reportGenerationService.generateReport(request.getFilePaths(), request.getTimezone());
     }
 
     @PostMapping("/reports/folder")
@@ -46,9 +47,10 @@ public class ReportController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Report generated successfully"),
             @ApiResponse(responseCode = "400", description = "Invalid request input"),
+            @ApiResponse(responseCode = "424", description = "Invalid timezone"),
             @ApiResponse(responseCode = "500", description = "Unexpected server error")
     })
     public GenerateReportResponse generateReportFromFolder(@RequestBody GenerateFolderReportRequest request) throws IOException {
-        return reportGenerationService.generateReportFromFolder(request.getFolderPath());
+        return reportGenerationService.generateReportFromFolder(request.getFolderPath(), request.getTimezone());
     }
 }

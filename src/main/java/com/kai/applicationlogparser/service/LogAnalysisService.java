@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -19,8 +20,12 @@ public final class LogAnalysisService {
     }
 
     public AnalysisBundle analyze(List<Path> inputFiles) throws IOException {
-        List<ParsedLogEntry> entries = logParserService.parseFiles(inputFiles);
-        IssueAnalyzerService.AnalysisResult analysisResult = issueAnalyzerService.analyze(entries);
+        return analyze(inputFiles, ZoneId.of("UTC"));
+    }
+
+    public AnalysisBundle analyze(List<Path> inputFiles, ZoneId targetZone) throws IOException {
+        List<ParsedLogEntry> entries = logParserService.parseFiles(inputFiles, targetZone);
+        IssueAnalyzerService.AnalysisResult analysisResult = issueAnalyzerService.analyze(entries, targetZone);
 
         return new AnalysisBundle(
                 entries.size(),

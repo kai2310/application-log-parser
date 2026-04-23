@@ -30,14 +30,18 @@ public final class LogParserService {
     );
 
     public List<ParsedLogEntry> parseFiles(List<Path> filePaths) throws IOException {
+        return parseFiles(filePaths, ZoneId.of("UTC"));
+    }
+
+    public List<ParsedLogEntry> parseFiles(List<Path> filePaths, ZoneId fallbackZone) throws IOException {
         List<ParsedLogEntry> entries = new ArrayList<>();
         for (Path filePath : filePaths) {
-            entries.addAll(parseFile(filePath));
+            entries.addAll(parseFile(filePath, fallbackZone));
         }
         return entries;
     }
 
-    private List<ParsedLogEntry> parseFile(Path filePath) throws IOException {
+    private List<ParsedLogEntry> parseFile(Path filePath, ZoneId fallbackZone) throws IOException {
         List<ParsedLogEntry> entries = new ArrayList<>();
         MutableParsedLogEntry currentEntry = null;
         int lineNumber = 0;
@@ -53,7 +57,7 @@ public final class LogParserService {
                     }
 
                     currentEntry = new MutableParsedLogEntry(
-                            parseTimestamp(matcher.group("timestamp")),
+                            parseTimestamp(matcher.group("timestamp"), fallbackZone),
                             matcher.group("thread").trim(),
                             matcher.group("cid") == null ? "" : matcher.group("cid").trim(),
                             matcher.group("level").trim(),
@@ -75,7 +79,7 @@ public final class LogParserService {
         return entries;
     }
 
-    private OffsetDateTime parseTimestamp(String timestamp) {
+    private OffsetDateTime parseTimestamp(String timestamp, ZoneId fallbackZone) {
         try {
             return OffsetDateTime.parse(timestamp, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
         } catch (DateTimeParseException ex) {
@@ -84,17 +88,17 @@ public final class LogParserService {
             } catch (DateTimeParseException ignored) {
                 try {
                     LocalDateTime localDateTime = LocalDateTime.parse(timestamp, LOGBACK_ISO_8601_MILLIS);
-                    return localDateTime.atZone(ZoneId.systemDefault()).toOffsetDateTime();
+                    return localDateTime.atZone(fallbackZone).toOffsetDateTime();
                 } catch (DateTimeParseException ignoredMillisComma) {
                     try {
                         LocalDateTime localDateTime = LocalDateTime.parse(timestamp, LOGBACK_ISO_8601_MILLIS_DOT);
-                        return localDateTime.atZone(ZoneId.systemDefault()).toOffsetDateTime();
+                        return localDateTime.atZone(fallbackZone).toOffsetDateTime();
                     } catch (DateTimeParseException ignoredMillisDot) {
                         try {
                             LocalDateTime localDateTime = LocalDateTime.parse(timestamp, LOGBACK_ISO_8601_SECONDS);
-                            return localDateTime.atZone(ZoneId.systemDefault()).toOffsetDateTime();
+                            return localDateTime.atZone(fallbackZone).toOffsetDateTime();
                         } catch (DateTimeParseException ignoredSeconds) {
-                            return OffsetDateTime.now();
+                            return OffsetDateTime.now(fallbackZone);
                         }
                     }
                 }

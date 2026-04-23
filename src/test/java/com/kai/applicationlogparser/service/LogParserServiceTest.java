@@ -11,11 +11,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LogParserServiceTest {
@@ -46,6 +46,18 @@ class LogParserServiceTest {
                 Arguments.of("2026-01-02 03:04:07,123", 7),
                 Arguments.of("2026-01-02 03:04:08.456", 8)
         );
+    }
+
+    @Test
+    void parseFiles_usesProvidedTimezoneForOffsetlessTimestamp() throws IOException {
+        Path file = tempDir.resolve("timezone.log");
+        String line = "2026-01-02 03:04:05 [main] cid-1 ERROR com.example.Logger - boom happened";
+        Files.writeString(file, line + System.lineSeparator());
+
+        List<ParsedLogEntry> entries = service.parseFiles(List.of(file), ZoneId.of("America/New_York"));
+
+        assertEquals(1, entries.size());
+        assertEquals(OffsetDateTime.parse("2026-01-02T03:04:05-05:00"), entries.get(0).timestamp());
     }
 
     @Test
